@@ -1,0 +1,123 @@
+﻿@page "/"
+@using BlazorApp1.Data
+@inject LedService LedService
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Control de Luz</PageTitle>
+
+<div class="container text-center mt-5">
+    <h1>💡 Control de Iluminación</h1>
+
+    <div class="card mx-auto mt-4 shadow" style="width: 20rem;">
+        <div class="card-body">
+            <h5 class="card-title text-muted">Estado Actual</h5>
+            
+            <div class="my-4">
+                @if (LedService.EstaEncendido)
+                {
+                    <span class="badge bg-success p-3 fs-4">🟢 ENCENDIDO</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger p-3 fs-4">🔴 APAGADO</span>
+                }
+            </div>
+
+            <button class="btn btn-primary btn-lg w-100" @onclick="AlternarLuz">
+                @(LedService.EstaEncendido ? "Apagar Luz" : "Encender Luz")
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-5">
+        <h3>📅 Historial de Actividad</h3>
+        <p class="text-muted">Últimos movimientos registrados en la base de datos.</p>
+
+        @if (historial == null)
+        {
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        }
+        else if (historial.Count == 0)
+        {
+            <p>Todavía no hay registros.</p>
+        }
+        else
+        {
+            <table class="table table-striped mx-auto text-start" style="max-width: 600px;">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var registro in historial)
+                    {
+                        <tr>
+                            <td>@registro.Fecha.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td>
+                                @if (registro.Estado)
+                                {
+                                    <span class="text-success fw-bold">Encendido</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger fw-bold">Apagado</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private List<RegistroLed>? historial;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Nos suscribimos para ver cambios en tiempo real si otro usuario toca el botón
+        LedService.OnChange += ActualizarPantalla;
+        
+        // Cargamos la lista al entrar
+        await CargarHistorial();
+    }
+
+    private async Task AlternarLuz()
+    {
+        // 1. Cambiamos el estado (hardware + DB)
+        await LedService.Alternar();
+        
+        // 2. Refrescamos la lista localmente
+        await CargarHistorial();
+    }
+
+    private async Task CargarHistorial()
+    {
+        historial = await LedService.ObtenerHistorial();
+    }
+
+    private async void ActualizarPantalla()
+    {
+        // Usamos InvokeAsync para asegurar que esto corra en el hilo principal de la UI
+        await InvokeAsync(async () =>
+        {
+            // 1. OBLIGATORIO: Volver a leer la base de datos
+            await CargarHistorial();
+
+            // 2. Redibujar la pantalla con los datos frescos
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        // Buena práctica: desuscribirse al salir para no ocupar memoria
+        LedService.OnChange -= ActualizarPantalla;
+    }
+}
