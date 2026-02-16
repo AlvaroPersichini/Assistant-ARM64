@@ -17,6 +17,7 @@ namespace BlazorApp1
         public LedService(IServiceScopeFactory scopeFactory)
         {
             _scopeFactory = scopeFactory;
+
             Console.WriteLine("--- INICIANDO LEDSERVICE ---"); // DEBUG
 
             RecuperarUltimoEstado();
@@ -89,9 +90,11 @@ namespace BlazorApp1
         public async Task Alternar()
         {
             EstaEncendido = !EstaEncendido;
+
             Console.WriteLine($"[ACCION] Nuevo estado: {EstaEncendido}");
 
             // Hardware (solo si es Linux)
+
             if (_gpio != null)
             {
                 _gpio.Write(PIN, EstaEncendido ? PinValue.High : PinValue.Low);
