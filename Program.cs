@@ -22,6 +22,21 @@ builder.Services.AddRazorComponents()
 
 var app = builder.Build();
 
+app.Services.GetService<LedService>();
+
+// Asegurar que el servicio se inicie y la DB exista
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    context.Database.EnsureCreated();
+
+    // Esto fuerza la creación del LedService dentro del mismo scope
+    scope.ServiceProvider.GetRequiredService<LedService>();
+}
+
+
+
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {

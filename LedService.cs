@@ -44,10 +44,14 @@ namespace BlazorApp1
                     var total = db.Registros.Count();
                     Console.WriteLine($"Registros encontrados en DB: {total}");
 
+
+
                     // Buscamos el último
                     var ultimoRegistro = db.Registros
-                        .OrderByDescending(r => r.Fecha)
+                        .OrderByDescending(r => r.Id) 
                         .FirstOrDefault();
+
+
 
                     if (ultimoRegistro != null)
                     {
